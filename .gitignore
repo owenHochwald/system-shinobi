@@ -4,3 +4,7 @@ docs/
 
 # outputs
 test_cpu
+probe/probe
+sensei/sensei
+/tmp/shinobi.pipe
+*.o
