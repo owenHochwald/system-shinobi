@@ -11,7 +11,7 @@ var currentIcons map[icon.IconState][]byte
 var templateIcons map[icon.IconState][]byte
 
 // Setup initializes the system tray with menu items and returns references to them
-func Setup(icons map[icon.IconState][]byte, templates map[icon.IconState][]byte) (*systray.MenuItem, *systray.MenuItem) {
+func Setup(icons map[icon.IconState][]byte, templates map[icon.IconState][]byte) (*systray.MenuItem, *systray.MenuItem, *systray.MenuItem) {
 	currentIcons = icons
 	templateIcons = templates
 
@@ -22,33 +22,42 @@ func Setup(icons map[icon.IconState][]byte, templates map[icon.IconState][]byte)
 	systray.SetTooltip("System Shinobi - CPU Monitor")
 
 	// Create menu items
-	cpuLabel := systray.AddMenuItem("CPU: --%", "Current CPU usage")
+	cpuLabel := systray.AddMenuItem("🥷 CPU: --% [Idle]", "Current CPU usage and ninja state")
 	cpuLabel.Disable() // Make it read-only
 
 	systray.AddSeparator()
 
-	quit := systray.AddMenuItem("Quit", "Exit System Shinobi")
+	dojoItem := systray.AddMenuItem("Open Dojo (Terminal UI)", "Launch the Dojo process manager")
 
-	return cpuLabel, quit
+	systray.AddSeparator()
+
+	quit := systray.AddMenuItem("Quit Shinobi", "Exit System Shinobi")
+
+	return cpuLabel, dojoItem, quit
 }
 
 // UpdateIcon swaps the systray icon based on the current state
 func UpdateIcon(state icon.IconState) {
 	if templateIcons != nil && currentIcons != nil {
-		// Use template icon for macOS light/dark mode support
 		systray.SetTemplateIcon(templateIcons[state], currentIcons[state])
 	} else if currentIcons != nil {
-		// Fallback to regular icon
 		systray.SetIcon(currentIcons[state])
 	}
 }
 
-// UpdateLabel updates the CPU percentage display in the menu
-func UpdateLabel(cpuLabel *systray.MenuItem, percent float64) {
-	cpuLabel.SetTitle(FormatCpuLabel(percent))
+// UpdateLabel updates the CPU percentage and state display in the menu
+func UpdateLabel(cpuLabel *systray.MenuItem, percent float64, state icon.IconState) {
+	cpuLabel.SetTitle(FormatCpuLabel(percent, state))
 }
 
-// FormatCpuLabel formats the CPU percentage for display
-func FormatCpuLabel(percent float64) string {
-	return fmt.Sprintf("CPU: %.1f%%", percent)
+// FormatCpuLabel formats the CPU percentage and state for display
+func FormatCpuLabel(percent float64, state icon.IconState) string {
+	stateNames := map[icon.IconState]string{
+		icon.StateIdle:   "Idle",
+		icon.StateLow:    "Low",
+		icon.StateMedium: "Medium",
+		icon.StateHigh:   "High",
+	}
+	name := stateNames[state]
+	return fmt.Sprintf("🥷 CPU: %.1f%% [%s]", percent, name)
 }
