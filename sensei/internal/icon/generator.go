@@ -37,8 +37,8 @@ func generateIcon(state IconState, template bool) []byte {
 	// Get the color for this state
 	ninjaColor := getColorForState(state, template)
 
-	// Draw ninja silhouette
-	drawNinjaSilhouette(img, ninjaColor)
+	// Draw ninja face based on state
+	drawNinjaFace(img, ninjaColor, state)
 
 	// Encode to PNG
 	var buf bytes.Buffer
@@ -68,26 +68,118 @@ func getColorForState(state IconState, template bool) color.NRGBA {
 	}
 }
 
-func drawNinjaSilhouette(img *image.NRGBA, c color.NRGBA) {
-	// Draw a simple ninja figure:
-	// - Circle head at top
-	// - Triangular body
-	// - Two small eye dots
+func drawNinjaFace(img *image.NRGBA, c color.NRGBA, state IconState) {
+	// Draw ninja head: circle centered at (11, 11) with radius 9
+	drawFilledCircle(img, 11, 11, 9, c)
 
-	// Head: filled circle centered at (11, 6) with radius 4
-	drawFilledCircle(img, 11, 6, 4, c)
-
-	// Body: triangle from (6, 11) to (16, 11) to (11, 20)
-	drawFilledTriangle(img, 6, 11, 16, 11, 11, 20, c)
-
-	// Eyes: two small dots (use a contrasting color or white)
-	eyeColor := color.NRGBA{255, 255, 255, 255} // White eyes
-	if c.R > 200 && c.G > 200 && c.B > 200 {
-		// If the ninja color is very light, use black eyes
-		eyeColor = color.NRGBA{0, 0, 0, 255}
+	// Draw mask covering lower half (creates the ninja look)
+	// Mask is a filled rectangle from y=12 to bottom
+	for y := 12; y < 20; y++ {
+		for x := 4; x < 18; x++ {
+			// Only draw if within the head circle
+			dx := x - 11
+			dy := y - 11
+			if dx*dx+dy*dy <= 81 { // radius 9 squared
+				img.Set(x, y, c)
+			}
+		}
 	}
-	img.Set(9, 6, eyeColor)
-	img.Set(13, 6, eyeColor)
+
+	// Cut out transparent area for the face opening (forehead/eyes area)
+	transparent := color.NRGBA{0, 0, 0, 0}
+	// Clear a horizontal band for the eyes (y = 8-11)
+	for y := 8; y <= 11; y++ {
+		for x := 5; x < 17; x++ {
+			dx := x - 11
+			dy := y - 11
+			if dx*dx+dy*dy <= 81 { // Only within head circle
+				img.Set(x, y, transparent)
+			}
+		}
+	}
+
+	// Draw different eye expressions based on state
+	switch state {
+	case StateIdle:
+		// Chill/relaxed: closed eyes (horizontal lines)
+		drawHorizontalLine(img, 6, 10, 4, c)  // Left eye
+		drawHorizontalLine(img, 12, 10, 4, c) // Right eye
+
+	case StateLow:
+		// Alert: eyes dilate (small dots)
+		drawFilledCircle(img, 8, 10, 1, c)  // Left eye
+		drawFilledCircle(img, 14, 10, 1, c) // Right eye
+
+	case StateMedium:
+		// Ready: normal eyes + headband
+		drawFilledCircle(img, 8, 10, 1, c)  // Left eye
+		drawFilledCircle(img, 14, 10, 1, c) // Right eye
+		// Headband across forehead
+		drawHorizontalLine(img, 5, 6, 12, c)
+		drawHorizontalLine(img, 5, 7, 12, c) // Make it thicker
+
+	case StateHigh:
+		// Angry: sharp angled eyes + headband
+		// Left eye: angled up-right
+		drawAngledLine(img, 6, 11, 10, 9, c)
+		// Right eye: angled up-left
+		drawAngledLine(img, 12, 9, 16, 11, c)
+		// Thick headband
+		drawHorizontalLine(img, 5, 6, 12, c)
+		drawHorizontalLine(img, 5, 7, 12, c)
+	}
+}
+
+func drawHorizontalLine(img *image.NRGBA, x, y, length int, c color.NRGBA) {
+	for i := 0; i < length; i++ {
+		if x+i >= 0 && x+i < iconSize && y >= 0 && y < iconSize {
+			img.Set(x+i, y, c)
+		}
+	}
+}
+
+func drawAngledLine(img *image.NRGBA, x1, y1, x2, y2 int, c color.NRGBA) {
+	// Bresenham's line algorithm for drawing angled lines
+	dx := x2 - x1
+	dy := y2 - y1
+	if dx < 0 {
+		dx = -dx
+	}
+	if dy < 0 {
+		dy = -dy
+	}
+
+	sx := -1
+	if x1 < x2 {
+		sx = 1
+	}
+	sy := -1
+	if y1 < y2 {
+		sy = 1
+	}
+
+	err := dx - dy
+	x, y := x1, y1
+
+	for {
+		if x >= 0 && x < iconSize && y >= 0 && y < iconSize {
+			img.Set(x, y, c)
+		}
+
+		if x == x2 && y == y2 {
+			break
+		}
+
+		e2 := 2 * err
+		if e2 > -dy {
+			err -= dy
+			x += sx
+		}
+		if e2 < dx {
+			err += dx
+			y += sy
+		}
+	}
 }
 
 func drawFilledCircle(img *image.NRGBA, cx, cy, r int, c color.NRGBA) {
