@@ -34,16 +34,21 @@ int cpu_sample(CpuSample *out) {
 }
 
 double cpu_delta(const CpuSample *prev, const CpuSample *cur) {
+  static double last_valid_cpu = 0.0;
+
   uint64_t delta_user = cur->user - prev->user;
   uint64_t delta_system = cur->system - prev->system;
   uint64_t delta_idle = cur->idle - prev->idle;
   uint64_t delta_nice = cur->nice - prev->nice;
 
   uint64_t delta_total = delta_user + delta_system + delta_idle + delta_nice;
+
+  // Return last valid reading on zero delta (no ticks elapsed)
   if (delta_total == 0) {
-    return 0.0;
+    return last_valid_cpu;
   }
 
   uint64_t delta_active = delta_user + delta_system + delta_nice;
-  return (100.0 * delta_active) / delta_total;
+  last_valid_cpu = (100.0 * delta_active) / delta_total;
+  return last_valid_cpu;
 }

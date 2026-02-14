@@ -8,3 +8,4 @@ probe/probe
 sensei/sensei
 /tmp/shinobi.pipe
 *.o
+sensei/dojo

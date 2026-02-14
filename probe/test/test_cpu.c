@@ -18,13 +18,13 @@ void test_cpu_delta_with_usage(void) {
 }
 
 void test_cpu_delta_high_usage(void) {
-    // prev: 100, 50, 850, 0 = 1000
-    // cur:  850, 100, 50, 0 = 1000
-    // delta_user = 750, delta_sys = 50, delta_idle = -800, delta_total = 1000
-    // delta_active = 750 + 50 = 800
+    // prev: 100 user, 50 sys, 850 idle, 0 nice = 1000 total
+    // cur:  850 user, 100 sys, 1050 idle, 0 nice = 2000 total
+    // delta: 750 user, 50 sys, 200 idle, 0 nice = 1000 delta
+    // active: 750 + 50 = 800
     // cpu_percent = (800 / 1000) * 100 = 80%
     CpuSample prev2 = {100, 50, 850, 0};
-    CpuSample cur2 = {850, 100, 50, 0};
+    CpuSample cur2 = {850, 100, 1050, 0};
 
     double result2 = cpu_delta(&prev2, &cur2);
     assert(fabs(result2 - 80.0) < 0.01);
