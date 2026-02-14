@@ -4,15 +4,17 @@
 #include "../include/cpu.h"
 
 void test_cpu_delta_with_usage(void) {
-    // prev: 100 user, 50 sys, 850 idle, 0 nice = 1000 total
-    // cur:  200 user, 100 sys, 700 idle, 0 nice = 1000 total
-    // delta: 100 user, 50 sys, -150 idle = 150 active out of 1000 = 15%
+    // prev: 100 user, 50 sys, 850 idle, 0 nice = 1000 total ticks
+    // cur:  250 user, 100 sys, 1650 idle, 0 nice = 2000 total ticks
+    // delta: 150 user, 50 sys, 800 idle = 1000 new ticks
+    // active: 150 user + 50 sys = 200 active ticks
+    // cpu_percent = (200 / 1000) * 100 = 20%
     CpuSample prev = {100, 50, 850, 0};
-    CpuSample cur = {200, 100, 700, 0};
+    CpuSample cur = {250, 100, 1650, 0};
 
     double result = cpu_delta(&prev, &cur);
-    assert(fabs(result - 15.0) < 0.01);
-    printf("✓ cpu_delta with 15%% usage\n");
+    assert(fabs(result - 20.0) < 0.01);
+    printf("✓ cpu_delta with 20%% usage\n");
 }
 
 void test_cpu_delta_high_usage(void) {
